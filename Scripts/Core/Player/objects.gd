@@ -29,8 +29,8 @@ static func handle_object_rotation(player: CharacterBody3D, object: RigidBody3D)
 static func release_object() -> void:
 	if picked_object:
 		can_pickup = false
-		picked_object.gravity_scale = 1  # Re-enable gravity
-		if picked_object.linear_velocity.length() > 0:
+		picked_object.gravity_scale = 1  # Re-enable object's gravity
+		if picked_object.linear_velocity.length() > 0: # Slow down object to prevent object throwing
 			picked_object.linear_velocity *= 0.5
 		picked_object = null
 		# Revert back to player camera mode
@@ -51,14 +51,21 @@ static func handle_object_interaction(player: CharacterBody3D, delta: float) -> 
 	# Maintain picked object even if raycast loses sight
 	if can_pickup and (picked_object or ("collider" in result.keys() and result.collider is RigidBody3D)):
 		var object: RigidBody3D = picked_object if picked_object else result.collider as RigidBody3D
+		# If the object goes out of range using mouse scroll, release it
 		if picked_object and picked_object.global_position.distance_to(origin) > RAY_LENGTH:
 			release_object()
 			return
 		if object.get_meta("pickable", false):
+			# Release the object if the player is picking it up and collides with it in order to prevent surfing
+			if object.get_contact_count() > 0:
+				for collider in object.get_colliding_bodies():
+					if collider.get_meta("Id", "") == "player":
+						release_object()
+						return
 			# Clear rotation velocity
 			if object.angular_velocity.length() > 0:
 				object.angular_velocity = Vector3.ZERO
-			# Register the picked object
+			# Register picked object
 			if not picked_object:
 				picked_object = object
 				object_offset = (object.global_position - player.head.global_transform.origin).length()
@@ -69,10 +76,10 @@ static func handle_object_interaction(player: CharacterBody3D, delta: float) -> 
 			# Compute the target position
 			var head_pos = player.head.global_transform.origin
 			var obj_final_pos = head_pos + head_normal * object_offset
-
 			var limit_factor = 0.35 / object.mass
 			var motion_vector = ((obj_final_pos - object.global_position) / delta) * limit_factor
 			object.linear_velocity = motion_vector  # Set velocity to move toward target
+
 			# Scroll to move object closer or further
 			if object_offset_increment != 0:
 				object_offset += object_offset_increment
