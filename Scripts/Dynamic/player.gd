@@ -56,6 +56,9 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_pressed("move_right"):
 		direction += basis.x
 
+	# Normalize direction so that diagonal movement isn't faster	
+	direction = direction.normalized()
+
 	# Alter speed
 	if Input.is_action_just_pressed("speedmode_run"):
 		PlayerStates.speed_mode.switch("Run")
