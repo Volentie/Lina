@@ -9,6 +9,9 @@ static var object_offset: float
 static var object_offset_increment: float = 0
 static var can_pickup = true
 static var mouse_sensitivity: float = 0.1
+static var highlighted_object: MeshInstance3D = null
+
+const highligh_mat: ShaderMaterial = preload("res://Resources/materials/highlight.tres")
 
 # Vector getters
 static func get_mouse_pos(player: CharacterBody3D) -> Vector2:
@@ -103,3 +106,20 @@ static func handle_object_interaction(player: CharacterBody3D, delta: float) -> 
 			# Handle objects rotation
 			if PlayerStates.camera_mode.get_cur_state_name() == "Object":
 				handle_object_rotation(player, object)
+
+static func disable_object_highlight() -> void:
+	if highlighted_object:
+		highlighted_object.material_overlay = null
+		highlighted_object = null
+
+static func highlight_object(player: CharacterBody3D) -> void:
+	var head_ray = cast_head_ray(player, [player])
+	if "collider" in head_ray.keys():
+		var mesh = head_ray.collider.get_parent() as MeshInstance3D
+		if mesh and mesh.get_meta("Interactable", false):
+			if mesh.material_overlay != highligh_mat:	
+				mesh.material_overlay = highligh_mat
+				highlighted_object = mesh
+			return
+	disable_object_highlight()
+			

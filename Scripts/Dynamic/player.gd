@@ -44,6 +44,9 @@ func _physics_process(delta: float) -> void:
 	elif Input.is_action_just_released("action_attack"):
 		Objects.release_object()
 		Objects.can_pickup = true
+	
+	# Handle object's highlight
+	Objects.highlight_object(self)
 
 	# Movement
 	var direction = Vector3.ZERO
