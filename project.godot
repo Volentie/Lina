@@ -72,3 +72,12 @@ camera_mode_object={
 [physics]
 
 3d/physics_engine="JoltPhysics3D"
+
+[rendering]
+
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=4
+lights_and_shadows/directional_shadow/16_bits=false
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality=4
+anti_aliasing/quality/msaa_3d=2
+lights_and_shadows/positional_shadow/atlas_size=6144
+lights_and_shadows/positional_shadow/atlas_16_bits=false

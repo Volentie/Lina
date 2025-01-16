@@ -1,5 +1,6 @@
 class_name PlayerConfig
 
+# This shouldn't be here, probably, this is dynamic
 static var speed: float = 0.0
 
 # Constants

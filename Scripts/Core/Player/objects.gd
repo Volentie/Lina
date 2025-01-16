@@ -10,6 +10,14 @@ static var object_offset_increment: float = 0
 static var can_pickup = true
 static var mouse_sensitivity: float = 0.1
 
+# Vector getters
+static func get_mouse_pos(player: CharacterBody3D) -> Vector2:
+	return player.get_viewport().get_mouse_position()
+
+static func get_head_normal(player: CharacterBody3D) -> Vector3:
+	return player.head.project_ray_normal(get_mouse_pos(player))
+
+# Methods
 static func handle_object_rotation(player: CharacterBody3D, object: RigidBody3D) -> void:
 	# Get player's basis (local axes)
 	var player_right = player.basis.x.normalized()    # Right direction
@@ -36,26 +44,30 @@ static func release_object() -> void:
 		# Revert back to player camera mode
 		PlayerStates.camera_mode.switch("Player")
 
-static func handle_object_interaction(player: CharacterBody3D, delta: float) -> void:
+static func cast_head_ray(player: CharacterBody3D, query_exclude: Array) -> Dictionary:
+	var origin = player.head.project_ray_origin(get_mouse_pos(player))
 	var space_state = player.get_world_3d().direct_space_state
-	var mouse_pos = player.get_viewport().get_mouse_position()
-
-	# Raycast
-	var origin = player.head.project_ray_origin(mouse_pos)
-	var head_normal = player.head.project_ray_normal(mouse_pos)
-	var end = origin + head_normal * RAY_LENGTH
+	var end = origin + get_head_normal(player) * RAY_LENGTH
 	var query = PhysicsRayQueryParameters3D.create(origin, end)
-	query.exclude = [player]
-	var result = space_state.intersect_ray(query)
+	query.exclude = query_exclude
+	return space_state.intersect_ray(query)
 
+static func handle_object_interaction(player: CharacterBody3D, delta: float) -> void:
+	var origin = player.head.project_ray_origin(get_mouse_pos(player))
+	# Cast a ray from the player's head to detect objects, get result as a dict
+	var head_ray = cast_head_ray(player, [player])
 	# Maintain picked object even if raycast loses sight
-	if can_pickup and (picked_object or ("collider" in result.keys() and result.collider is RigidBody3D)):
-		var object: RigidBody3D = picked_object if picked_object else result.collider as RigidBody3D
+	if can_pickup and (picked_object or ("collider" in head_ray.keys() and head_ray.collider is RigidBody3D)):
+		var object: RigidBody3D = picked_object if picked_object else head_ray.collider as RigidBody3D
 		# If the object goes out of range using mouse scroll, release it
 		if picked_object and picked_object.global_position.distance_to(origin) > RAY_LENGTH:
 			release_object()
 			return
 		if object.get_meta("pickable", false):
+			# If object's not counting collisions (or properly counting them), fix it
+			if not object.contact_monitor or object.max_contacts_reported < 5:
+				object.contact_monitor = true
+				object.max_contacts_reported = 5
 			# Release the object if the player is picking it up and collides with it in order to prevent surfing
 			if object.get_contact_count() > 0:
 				for collider in object.get_colliding_bodies():
@@ -75,7 +87,7 @@ static func handle_object_interaction(player: CharacterBody3D, delta: float) -> 
 
 			# Compute the target position
 			var head_pos = player.head.global_transform.origin
-			var obj_final_pos = head_pos + head_normal * object_offset
+			var obj_final_pos = head_pos + get_head_normal(player) * object_offset
 			var limit_factor = 0.35 / object.mass
 			var motion_vector = ((obj_final_pos - object.global_position) / delta) * limit_factor
 			object.linear_velocity = motion_vector  # Set velocity to move toward target
