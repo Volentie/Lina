@@ -115,9 +115,14 @@ static func disable_object_highlight() -> void:
 static func highlight_object(player: CharacterBody3D) -> void:
 	var head_ray = cast_head_ray(player, [player])
 	if "collider" in head_ray.keys():
-		var mesh = head_ray.collider.get_parent() as MeshInstance3D
-		if mesh and mesh.get_meta("Interactable", false):
-			if mesh.material_overlay != highligh_mat:	
+		var obj = head_ray.collider
+		var mesh: MeshInstance3D
+		if obj.get_parent() is MeshInstance3D:
+			mesh = obj.get_parent()
+		else:
+			mesh = obj.find_child("mesh*")
+		if mesh and obj.get_meta("interactable", false):
+			if mesh.material_overlay != highligh_mat:
 				mesh.material_overlay = highligh_mat
 				highlighted_object = mesh
 			return
