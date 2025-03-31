@@ -55,7 +55,10 @@ static func handle_object_interaction(player: CharacterBody3D, delta: float) -> 
 		if picked_object and picked_object.global_position.distance_to(origin) > RAY_LENGTH:
 			release_object()
 			return
-		if object.get_meta("pickable", false):
+		if object.name.ends_with("-rigid"):
+			# TODO: Move this to run once booting
+			if object.contact_monitor == false:
+				object.contact_monitor = true
 			# Release the object if the player is picking it up and collides with it in order to prevent surfing
 			if object.get_contact_count() > 0:
 				for collider in object.get_colliding_bodies():
