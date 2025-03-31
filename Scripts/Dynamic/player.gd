@@ -12,6 +12,16 @@ func _ready() -> void:
 	PlayerStates.camera_mode.switch("Player")
 	# Mouse mode
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	
+	# Setup interactable objects
+	var home: Node3D = get_tree().root.get_child(0).find_child("home")
+	for obj in home.get_children(false):
+		if obj.name.find("$INTB$") != -1:
+			if not obj.contact_monitor:
+				obj.contact_monitor = true
+				obj.max_contacts_reported = 5
+			if not obj.continuous_cd:
+				obj.continuous_cd = true
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
@@ -95,6 +105,7 @@ func _physics_process(delta: float) -> void:
 		velocity = lerp(velocity, force, 0.1)
 		# Apply gravity
 		velocity.y -= (PlayerConfig.gravity_scale * 2.5) * delta
+	
 
 # Handle sounds
 func _process(_delta: float) -> void:
