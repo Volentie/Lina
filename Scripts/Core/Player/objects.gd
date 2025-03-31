@@ -3,7 +3,7 @@ class_name Objects
 # Variables
 static var mouse_input: Vector2 = Vector2.ZERO
 static var picked_object: RigidBody3D = null
-const RAY_LENGTH = 3
+const RAY_LENGTH = 2
 const OBJECT_OFFSET = 1
 static var object_offset: float
 static var object_offset_increment: float = 0
@@ -55,10 +55,7 @@ static func handle_object_interaction(player: CharacterBody3D, delta: float) -> 
 		if picked_object and picked_object.global_position.distance_to(origin) > RAY_LENGTH:
 			release_object()
 			return
-		if object.name.ends_with("-rigid"):
-			# TODO: Move this to run once booting
-			if object.contact_monitor == false:
-				object.contact_monitor = true
+		if object.name.find("$INTB$"):
 			# Release the object if the player is picking it up and collides with it in order to prevent surfing
 			if object.get_contact_count() > 0:
 				for collider in object.get_colliding_bodies():
