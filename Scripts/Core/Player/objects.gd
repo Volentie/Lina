@@ -36,18 +36,7 @@ static func release_object() -> void:
 		# Revert back to player camera mode
 		PlayerStates.camera_mode.switch("Player")
 
-static func handle_object_interaction(player: CharacterBody3D, delta: float) -> void:
-	var space_state = player.get_world_3d().direct_space_state
-	var mouse_pos = player.get_viewport().get_mouse_position()
-
-	# Raycast
-	var origin = player.head.project_ray_origin(mouse_pos)
-	var head_normal = player.head.project_ray_normal(mouse_pos)
-	var end = origin + head_normal * RAY_LENGTH
-	var query = PhysicsRayQueryParameters3D.create(origin, end)
-	query.exclude = [player]
-	var result = space_state.intersect_ray(query)
-
+static func handle_object_interaction(player: CharacterBody3D, origin: Vector3, head_normal: Vector3, result: Dictionary, delta: float) -> void:
 	# Maintain picked object even if raycast loses sight
 	if can_pickup and (picked_object or ("collider" in result.keys() and result.collider is RigidBody3D)):
 		var object: RigidBody3D = picked_object if picked_object else result.collider as RigidBody3D
@@ -55,7 +44,7 @@ static func handle_object_interaction(player: CharacterBody3D, delta: float) -> 
 		if picked_object and picked_object.global_position.distance_to(origin) > RAY_LENGTH:
 			release_object()
 			return
-		if object.name.find("$INTB$"):
+		if object.name.find("$INTB$") != -1:
 			# Release the object if the player is picking it up and collides with it in order to prevent surfing
 			if object.get_contact_count() > 0:
 				for collider in object.get_colliding_bodies():
