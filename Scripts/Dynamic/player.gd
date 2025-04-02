@@ -144,7 +144,6 @@ func _physics_process(delta: float) -> void:
 		# Apply gravity
 		velocity.y -= (PlayerConfig.gravity_scale * 2.5) * delta
 	
-
 # Handle sounds
 func _process(_delta: float) -> void:
 	PlayerSound.handle_sounds({
