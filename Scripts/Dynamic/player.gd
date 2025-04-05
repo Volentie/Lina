@@ -8,6 +8,7 @@ extends CharacterBody3D
 @onready var animation_player = $"../animation_player"
 @onready var door_label = $"../UI/door_label"
 @onready var area_3d: Area3D = $Area3D
+@onready var player_body = $player_body
 
 # Variables
 const RAY_LENGTH = 2
@@ -28,6 +29,8 @@ func _ready() -> void:
 				obj.max_contacts_reported = 5
 			if not obj.continuous_cd:
 				obj.continuous_cd = true
+			obj.collision_layer = (1 << 3)
+			obj.collision_mask = (1 << 0) | (1 << 3)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
@@ -40,36 +43,22 @@ func _input(event: InputEvent) -> void:
 			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 				Objects.object_offset_increment = -0.1
 
-func cast_ray() -> Dictionary:
-	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-	var mouse_pos: Vector2 = get_viewport().get_mouse_position()
-
-	#Raycast
-	var origin = head.project_ray_origin(mouse_pos)
-	var head_normal = head.project_ray_normal(mouse_pos)
-	var end = origin + head_normal * RAY_LENGTH
-	var query = PhysicsRayQueryParameters3D.create(origin, end)
-	query.exclude = [self]
-	var result = space_state.intersect_ray(query)
-
-	return {
-		"origin": origin,
-		"head_normal": head_normal,
-		"result": result
-	}
-
 func _physics_process(delta: float) -> void:
 	# Camera
 	if PlayerStates.camera_mode.get_cur_state_name() == "Player":
 		Camera.handle_camera_rotation(self)
 
-	# Raycast
-	var ray_dict: Dictionary = cast_ray()
-	var origin = ray_dict.get("origin")
-	var head_normal = ray_dict.get("head_normal")
-	var result = ray_dict.get("result")
+	# Raycast setup
+	var mouse_pos: Vector2 = get_viewport().get_mouse_position()
+	var origin = head.project_ray_origin(mouse_pos)
+	var head_normal = head.project_ray_normal(mouse_pos)
+	var from = head.project_ray_origin(mouse_pos)
+	var to = origin + head_normal * RAY_LENGTH
+	var world = get_world_3d()
+	var hit = Utils.cast_ray(world, from, to, [self])
+	
 
-	if Doors.is_door(result):
+	if Doors.is_door(hit):
 		Doors.label_door(door_label)
 		if Input.is_action_pressed("action_interact"):
 			Doors.open_door(animation_player)
@@ -79,7 +68,8 @@ func _physics_process(delta: float) -> void:
 		
 	# Handle object interaction
 	if Input.is_action_pressed("action_attack"):
-		Objects.handle_object_interaction(self, origin, head_normal, result, delta)
+		Objects.handle_object_interaction(self, origin, head_normal, hit, delta, get_tree())
+
 
 	if Input.is_action_just_released("action_attack"):
 		Objects.release_object()
@@ -89,9 +79,6 @@ func _physics_process(delta: float) -> void:
 			PlayerStates.camera_mode.switch("Object")
 		elif Input.is_action_just_released("camera_mode_object"):
 			PlayerStates.camera_mode.switch("Player")
-
-	# Apply movement
-	move_and_slide()
 
 	# Movement
 	var direction = Vector3.ZERO
@@ -143,7 +130,11 @@ func _physics_process(delta: float) -> void:
 		velocity = lerp(velocity, force, 0.1)
 		# Apply gravity
 		velocity.y -= (PlayerConfig.gravity_scale * 2.5) * delta
-	
+		velocity.y = clamp(velocity.y, -50.0, 50.0)
+
+	# Apply movement
+	move_and_slide()
+
 # Handle sounds
 func _process(_delta: float) -> void:
 	PlayerSound.handle_sounds({

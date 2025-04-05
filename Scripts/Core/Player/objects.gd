@@ -36,21 +36,15 @@ static func release_object() -> void:
 		# Revert back to player camera mode
 		PlayerStates.camera_mode.switch("Player")
 
-static func handle_object_interaction(player: CharacterBody3D, origin: Vector3, head_normal: Vector3, result: Dictionary, delta: float) -> void:
+static func handle_object_interaction(player: CharacterBody3D, origin: Vector3, head_normal: Vector3, result: Dictionary, delta: float, _tree: SceneTree) -> void:
 	# Maintain picked object even if raycast loses sight
 	if can_pickup and (picked_object or ("collider" in result.keys() and result.collider is RigidBody3D)):
 		var object: RigidBody3D = picked_object if picked_object else result.collider as RigidBody3D
-		# If the object goes out of range using mouse scroll, release it
-		if picked_object and picked_object.global_position.distance_to(origin) > RAY_LENGTH:
-			release_object()
-			return
+		# # If the object goes out of range using mouse scroll, release it
+		# if picked_object and picked_object.global_position.distance_to(origin) > RAY_LENGTH:
+		# 	release_object()
+		# 	return
 		if object.name.find("$INTB$") != -1:
-			# Release the object if the player is picking it up and collides with it in order to prevent surfing
-			if object.get_contact_count() > 0:
-				for collider in object.get_colliding_bodies():
-					if collider.get_meta("Id", "") == "player":
-						release_object()
-						return
 			# Clear rotation velocity
 			if object.angular_velocity.length() > 0:
 				object.angular_velocity = Vector3.ZERO
@@ -64,10 +58,20 @@ static func handle_object_interaction(player: CharacterBody3D, origin: Vector3, 
 
 			# Compute the target position
 			var head_pos = player.head.global_transform.origin
-			var obj_final_pos = head_pos + head_normal * object_offset
+			var obj_final_pos = head_pos + head_normal * object_offset / 1.1
 			var limit_factor = 0.35 / object.mass
 			var motion_vector = ((obj_final_pos - object.global_position) / delta) * limit_factor
-			object.linear_velocity = motion_vector  # Set velocity to move toward target
+			
+			var world = player.get_world_3d()
+			var ray_origin = object.global_position
+			var ray_target = obj_final_pos
+			var hit = Utils.cast_ray(world, ray_origin, ray_target, [object, player])
+
+			if hit.is_empty():
+				object.linear_velocity = motion_vector
+			else:
+				release_object()
+				return
 
 			# Scroll to move object closer or further
 			if object_offset_increment != 0:
