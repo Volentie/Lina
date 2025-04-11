@@ -10,13 +10,23 @@ extends CharacterBody3D
 @onready var area_3d: Area3D = $Area3D
 @onready var player_body = $player_body
 
+var allow_input = false
+
 # Variables
 const RAY_LENGTH = 2
 
 func _ready() -> void:
-	PlayerStates.general_mode.switch("Idle")
+	PlayerStates.general_mode.switch("Intro")
 	PlayerStates.speed_mode.switch("Walk")
 	PlayerStates.camera_mode.switch("Player")
+	
+	# Start initial dialogue
+	var dialogue = preload("res://Scenes/dialogue_box.tscn").instantiate()
+	get_tree().root.get_child(0).get_child(0).get_child(0).add_child.call_deferred(dialogue)
+	dialogue.connect("dialogue_finished", func():
+		PlayerStates.general_mode.switch("Idle")
+	)
+
 	# Mouse mode
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	
@@ -33,6 +43,8 @@ func _ready() -> void:
 			obj.collision_mask = (1 << 0) | (1 << 3)
 
 func _input(event: InputEvent) -> void:
+	if PlayerStates.general_mode.get_cur_state_name() == "Intro":
+		return
 	if event is InputEventMouseMotion:
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 			Objects.mouse_input += event.relative
@@ -44,6 +56,8 @@ func _input(event: InputEvent) -> void:
 				Objects.object_offset_increment = -0.1
 
 func _physics_process(delta: float) -> void:
+	if PlayerStates.general_mode.get_cur_state_name() == "Intro":
+		return
 	# Camera
 	if PlayerStates.camera_mode.get_cur_state_name() == "Player":
 		Camera.handle_camera_rotation(self)

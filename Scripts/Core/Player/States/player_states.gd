@@ -2,6 +2,7 @@ class_name PlayerStates
 
 # States
 static var general_mode = StateMachine.new("GeneralMode", {
+	"Intro": State.new("Intro"),
 	"Walking": State.new("Walking"),
 	"Running": State.new("Running"),
 	"Jumping": State.new("Jumping"),
