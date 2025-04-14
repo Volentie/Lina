@@ -19,6 +19,10 @@ func _ready() -> void:
 	PlayerStates.speed_mode.switch("Walk")
 	PlayerStates.camera_mode.switch("Player")
 	
+	Dialogue.play_dialogue("Intro", func():
+		PlayerStates.general_mode.switch("Intro")
+	)
+	
 	# Mouse mode
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	
@@ -143,8 +147,6 @@ func _physics_process(delta: float) -> void:
 
 # Handle sounds
 func _process(_delta: float) -> void:
-	if not Dialogue.finished["Intro"]:
-		Dialogue.play_dialogue("Intro")
 	PlayerSound.handle_sounds({
 		"walk_stream": walk_stream,
 		"jump_stream": jump_stream,
