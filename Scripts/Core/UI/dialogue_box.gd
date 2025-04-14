@@ -2,6 +2,7 @@ class_name Dialogue extends Control
 
 static var current_line: int
 static var dialogue_type := ""
+static var label: Label
 static var lines := {
 	"Intro":
 	[
@@ -19,6 +20,7 @@ static var dialogue_playing := false
 func _ready() -> void:
 	if instance == null:
 		instance = self
+		label = instance.get_node("Panel/Label")
 	else:
 		push_warning("Dialogue.instance was already registered.")
 
@@ -26,7 +28,6 @@ static func update_label(line: String) -> void:
 	if instance == null:
 		push_warning("Dialogue.instance is null")
 		return
-	var label = instance.get_node("Panel/Label")
 	label.text = line
 
 static func play_dialogue(diag_type: String, on_dialogue_start: Callable = func():) -> void:
@@ -43,6 +44,9 @@ static func play_dialogue(diag_type: String, on_dialogue_start: Callable = func(
 	while instance == null:
 		await Engine.get_main_loop().create_timer(0.1).timeout
 		print("Waiting for Dialogue.instance...")
+
+	# Set instance to visible
+	instance.visible = true
 		
 	update_label(lines[dialogue_type][current_line])
 
@@ -63,7 +67,7 @@ func _process(_delta: float) -> void:
 			dialogue_playing = false
 			PlayerStates.general_mode.switch("Idle")
 			dialogue_type = ""
-			instance.queue_free() # Delete the node at the end of the current frame
+			instance.visible = false
 			instance.emit_signal("dialogue_finished", finished_type)
 		else:
 			update_label(line[current_line])
