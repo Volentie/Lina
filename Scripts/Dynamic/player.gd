@@ -16,17 +16,9 @@ var allow_input = false
 const RAY_LENGTH = 2
 
 func _ready() -> void:
-	PlayerStates.general_mode.switch("Intro")
 	PlayerStates.speed_mode.switch("Walk")
 	PlayerStates.camera_mode.switch("Player")
 	
-	# Start initial dialogue
-	var dialogue = preload("res://Scenes/dialogue_box.tscn").instantiate()
-	get_tree().root.get_child(0).get_child(0).get_child(0).add_child.call_deferred(dialogue)
-	dialogue.connect("dialogue_finished", func():
-		PlayerStates.general_mode.switch("Idle")
-	)
-
 	# Mouse mode
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	
@@ -43,8 +35,10 @@ func _ready() -> void:
 			obj.collision_mask = (1 << 0) | (1 << 3)
 
 func _input(event: InputEvent) -> void:
+	# Don't register mouse input while in 'intro' mode
 	if PlayerStates.general_mode.get_cur_state_name() == "Intro":
 		return
+
 	if event is InputEventMouseMotion:
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 			Objects.mouse_input += event.relative
@@ -71,7 +65,6 @@ func _physics_process(delta: float) -> void:
 	var world = get_world_3d()
 	var hit = Utils.cast_ray(world, from, to, [self])
 	
-
 	if Doors.is_door(hit):
 		Doors.label_door(door_label)
 		if Input.is_action_pressed("action_interact"):
@@ -83,7 +76,6 @@ func _physics_process(delta: float) -> void:
 	# Handle object interaction
 	if Input.is_action_pressed("action_attack"):
 		Objects.handle_object_interaction(self, origin, head_normal, hit, delta, get_tree())
-
 
 	if Input.is_action_just_released("action_attack"):
 		Objects.release_object()
@@ -151,6 +143,8 @@ func _physics_process(delta: float) -> void:
 
 # Handle sounds
 func _process(_delta: float) -> void:
+	if not Dialogue.finished["Intro"]:
+		Dialogue.play_dialogue("Intro")
 	PlayerSound.handle_sounds({
 		"walk_stream": walk_stream,
 		"jump_stream": jump_stream,
