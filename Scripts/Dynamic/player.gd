@@ -9,6 +9,8 @@ extends CharacterBody3D
 @onready var door_label = $"../UI/door_label"
 @onready var area_3d: Area3D = $Area3D
 @onready var player_body = $player_body
+@onready var interact_label: Label = $"../UI/interaction_label"
+var interactable_target: Node = null
 
 var allow_input = false
 
@@ -42,7 +44,11 @@ func _input(event: InputEvent) -> void:
 	# Don't register mouse input while in 'intro' mode
 	if PlayerStates.general_mode.get_cur_state_name() == "Intro":
 		return
-
+	
+	if event.is_action_pressed("action_interact"):
+		if interactable_target and interactable_target.has_method("interact"):
+			interactable_target.interact()
+			
 	if event is InputEventMouseMotion:
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 			Objects.mouse_input += event.relative
@@ -52,6 +58,11 @@ func _input(event: InputEvent) -> void:
 				Objects.object_offset_increment = 0.1
 			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 				Objects.object_offset_increment = -0.1
+
+func hit_valid(hit: Dictionary) -> Dictionary:
+	if hit and hit.has("collider"):
+		return hit
+	return {}
 
 func _physics_process(delta: float) -> void:
 	if PlayerStates.general_mode.get_cur_state_name() == "Intro":
@@ -67,17 +78,27 @@ func _physics_process(delta: float) -> void:
 	var from = head.project_ray_origin(mouse_pos)
 	var to = origin + head_normal * RAY_LENGTH
 	var world = get_world_3d()
-	var hit = Utils.cast_ray(world, from, to, [self])
+	var hit = Utils.cast_ray(world, from, to, [self])	
 	
-	if Doors.is_door(hit):
-		Doors.label_door(door_label)
-		if Input.is_action_pressed("action_interact"):
-			Doors.open_door(animation_player)
+	if hit_valid(hit):
+		if Doors.is_door(hit):
+			Doors.label_door(door_label)
+			if Input.is_action_pressed("action_interact"):
+				Doors.open_door(animation_player)
+		# Handle dialogue_interactable objects
+		if hit.collider.get_parent() and hit.collider.get_parent().has_method("interact"):
+			interactable_target = hit.collider.get_parent()
+			interact_label.text = "Interact [E]"
+			interact_label.visible = true
 	else:
 		if Doors.is_labeled:
 			Doors.unlabel_door(door_label)
-		
+		if interact_label.visible:
+			interact_label.visible = false
+		interactable_target = null
 	# Handle object interaction
+	# out of hit_valid because the first check can be passed either by a valid hit or if there is a picked_object
+	# (it does it's own check)
 	if Input.is_action_pressed("action_attack"):
 		Objects.handle_object_interaction(self, origin, head_normal, hit, delta, get_tree())
 

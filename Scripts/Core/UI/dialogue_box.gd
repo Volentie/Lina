@@ -10,9 +10,13 @@ static var lines := {
 		"Where are you?",
 		"You mean so much to me.",
 		"You can't just vanish like that!"
+	],
+	"TV": [
+		"It's just static...",
+		"Maybe it's trying to tell me something."
 	]
 }
-signal dialogue_finished(dialogue_type: String)
+signal dialogue_finished(dialogue_type: String) # TODO: Use it as a signal to some activity
 
 static var instance: Dialogue
 static var dialogue_playing := false
@@ -30,7 +34,7 @@ static func update_label(line: String) -> void:
 		return
 	label.text = line
 
-static func play_dialogue(diag_type: String, on_dialogue_start: Callable = func():) -> void:
+static func play_dialogue(diag_type: String, on_dialogue_start: Callable = Callable() ) -> void:
 	# Check if dialogue is already playing somewhere else
 	if dialogue_playing:
 		push_warning("Dialogue already in progress.")
@@ -50,8 +54,21 @@ static func play_dialogue(diag_type: String, on_dialogue_start: Callable = func(
 		
 	update_label(lines[dialogue_type][current_line])
 
-	if on_dialogue_start:
-		on_dialogue_start.call()
+	if on_dialogue_start.is_valid():
+		match on_dialogue_start.get_argument_count():
+			0:
+				on_dialogue_start.call()
+			1:
+				on_dialogue_start.call(instance)
+			_:
+				push_error("on_dialogue_start expects too many arguments.")
+
+static func hide_dialogue() -> void:
+	var finished_type := dialogue_type
+	dialogue_playing = false
+	dialogue_type = ""
+	instance.visible = false
+	instance.emit_signal("dialogue_finished", finished_type)
 
 func _process(_delta: float) -> void:
 	if not dialogue_playing:
@@ -62,12 +79,7 @@ func _process(_delta: float) -> void:
 	if Input.is_action_just_pressed("ui_confirm"):
 		current_line += 1
 		if current_line >= line.size():
-			var finished_type := dialogue_type
-			# Reset vars
-			dialogue_playing = false
+			hide_dialogue()
 			PlayerStates.general_mode.switch("Idle")
-			dialogue_type = ""
-			instance.visible = false
-			instance.emit_signal("dialogue_finished", finished_type)
 		else:
 			update_label(line[current_line])

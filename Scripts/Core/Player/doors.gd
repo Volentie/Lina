@@ -4,9 +4,8 @@ static var is_opened = false
 static var is_labeled = false
 
 static func is_door(result: Dictionary) -> bool:
-	if result and result.collider.get_parent():
-		if result.collider.get_parent().name.find("$DOOR$") != -1:
-			return true
+	if result.collider.get_parent() and result.collider.get_parent().name.find("$DOOR$") != -1:
+		return true
 	return false
 
 static func label_door(label: Label) -> void:

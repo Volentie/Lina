@@ -40,10 +40,10 @@ static func handle_object_interaction(player: CharacterBody3D, origin: Vector3, 
 	# Maintain picked object even if raycast loses sight
 	if can_pickup and (picked_object or ("collider" in result.keys() and result.collider is RigidBody3D)):
 		var object: RigidBody3D = picked_object if picked_object else result.collider as RigidBody3D
-		# # If the object goes out of range using mouse scroll, release it
-		# if picked_object and picked_object.global_position.distance_to(origin) > RAY_LENGTH:
-		# 	release_object()
-		# 	return
+		# If the object goes out of range using mouse scroll, release it
+		if picked_object and picked_object.global_position.distance_to(origin) > RAY_LENGTH:
+			release_object()
+			return
 		if object.name.find("$INTB$") != -1:
 			# Clear rotation velocity
 			if object.angular_velocity.length() > 0:
